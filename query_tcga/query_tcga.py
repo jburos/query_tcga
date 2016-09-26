@@ -15,8 +15,7 @@ cur_version = sys.version_info
 if cur_version <= py27_version:
     sys.path.append('~/projects/tcga-blca/query_tcga')
     from log_with import log_with
-    import defaults 
-    from defaults import GDC_API_ENDPOINT
+    from .configure import get_setting_value 
     import parameters as _params
     import cache
     from cache import requests_get
@@ -25,8 +24,7 @@ if cur_version <= py27_version:
     from super_list import L
 else:
     from .log_with import log_with
-    from . import defaults 
-    from .defaults import GDC_API_ENDPOINT
+    from .configure import get_setting_value 
     from . import parameters as _params
     from . import cache
     from .cache import requests_get
@@ -46,7 +44,7 @@ cache.setup_cache()
 
 
 @log_with()
-def _get_num_pages(project_name, endpoint_name, size=defaults.DEFAULT_SIZE,
+def _get_num_pages(project_name, endpoint_name, size=get_setting_value('DEFAULT_SIZE'),
                  n=None, data_category=None, query_args={}, verify=False):
     """ Get total number of pages for given criteria
 
@@ -59,7 +57,7 @@ def _get_num_pages(project_name, endpoint_name, size=defaults.DEFAULT_SIZE,
     elif n and size:
         return np.floor(n / size)+1
     else:
-        endpoint = GDC_API_ENDPOINT.format(endpoint='files')
+        endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint='files')
         params = _params.construct_parameters(project_name=project_name,
                                                endpoint_name=endpoint_name,
                                                size=size,
@@ -74,14 +72,14 @@ def _get_num_pages(project_name, endpoint_name, size=defaults.DEFAULT_SIZE,
 
 
 @log_with()
-def _get_manifest_once(project_name, size=defaults.DEFAULT_SIZE, page=0,
+def _get_manifest_once(project_name, size=get_setting_value('DEFAULT_SIZE'), page=0,
                        data_category=None, query_args={}, verify=False):
     """ Single get for manifest of files matching project_name & categories
 
     >>> _get_manifest_once('TCGA-BLCA', query_args=dict(data_category=['Clinical']), size=5)
     <Response [200]>
     """
-    endpoint = GDC_API_ENDPOINT.format(endpoint='files')
+    endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint='files')
     from_param = helpers.compute_start_given_page(page=page, size=size)
     params = _params.construct_parameters(project_name=project_name,
                                        size=size,
@@ -99,7 +97,7 @@ def _get_manifest_once(project_name, size=defaults.DEFAULT_SIZE, page=0,
 
 @log_with()
 def get_manifest(project_name=None, n=None, data_category=None, query_args={}, verify=False,
-                 size=defaults.DEFAULT_SIZE, pages=None):
+                 size=get_setting_value('DEFAULT_SIZE'), pages=None):
     """ Get manifest containing files to be downloaded. 
 
         By default returns a manifest for all files, up to n files. Otherwise users 
@@ -153,7 +151,7 @@ def get_manifest_data(*args, **kwargs):
 
 
 @log_with()
-def download_manifest(data_dir=defaults.GDC_DATA_DIR, filename='manifest.txt', only_updates=False, *args, **kwargs):
+def download_manifest(data_dir=get_setting_value('GDC_DATA_DIR'), filename='manifest.txt', only_updates=False, *args, **kwargs):
     """ Get manifest containing files to be downloaded, and write to disk.
         File will be written to GDC_DATA_DIR by default.
         See `get_manifest` for more details.
@@ -214,9 +212,9 @@ def _truncate_manifest_contents(manifest_contents, n):
 @log_with()
 def download_from_manifest(manifest_file=None, manifest_contents=None,
                             n=None,
-                            data_dir=defaults.GDC_DATA_DIR,
+                            data_dir=get_setting_value('GDC_DATA_DIR'),
                             only_updates=True,
-                            size=defaults.DEFAULT_SIZE,
+                            size=get_setting_value('DEFAULT_SIZE'),
                             pages=None):
 
     ## prep manifest contents per params
@@ -245,7 +243,7 @@ def download_from_manifest(manifest_file=None, manifest_contents=None,
         manifest_file.flush()
         # call gdc-client to download contents
         # {gdc_client} download -m {manifest_file} -t {auth_token}
-        exe_bash = [defaults.GDC_CLIENT_PATH, 'download', '-m', manifest_file.name, '-t', defaults.GDC_TOKEN_PATH]
+        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-m', manifest_file.name, '-t', get_setting_value('GDC_TOKEN_PATH')]
         if subprocess.check_call(exe_bash, cwd=data_dir):
             subprocess.call(exe_bash, cwd=data_dir)
         # verify that all files in original manifest have been downloaded
@@ -257,9 +255,9 @@ def download_from_manifest(manifest_file=None, manifest_contents=None,
 
 @log_with()
 def download_files(project_name, data_category, n=None, 
-                   data_dir=defaults.GDC_DATA_DIR, query_args={},
+                   data_dir=get_setting_value('GDC_DATA_DIR'), query_args={},
                    only_updates=True, verify=False,
-                   size=defaults.DEFAULT_SIZE,
+                   size=get_setting_value('DEFAULT_SIZE'),
                    pages=None):
     """ Download files for this project to the current working directory
         1. Query API to get manifest file containing all files matching criteria
@@ -305,7 +303,7 @@ def download_files(project_name, data_category, n=None,
         manifest_file.flush()
         # call gdc-client to download contents
         # {gdc_client} download -m {manifest_file} -t {auth_token}
-        exe_bash = [defaults.GDC_CLIENT_PATH, 'download', '-m', manifest_file.name, '-t', defaults.GDC_TOKEN_PATH]
+        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-m', manifest_file.name, '-t', get_setting_value('GDC_TOKEN_PATH')]
         if subprocess.check_call(exe_bash, cwd=data_dir):
             subprocess.call(exe_bash, cwd=data_dir)
         # verify that all files in original manifest have been downloaded
@@ -318,7 +316,7 @@ def download_files(project_name, data_category, n=None,
 
 
 @log_with()
-def download_clinical_files(project_name, n=None, data_dir=defaults.GDC_DATA_DIR, **kwargs):
+def download_clinical_files(project_name, n=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
     """ Download clinical files for this project to the data_dir
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
