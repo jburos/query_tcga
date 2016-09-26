@@ -11,14 +11,10 @@ Helper functions to download TCGA data from GDC
 Installation / Usage
 --------------------
 
-To install use pip:
-
-    $ pip install query_tcga
-
-
-Or clone the repo:
+To install, clone the repo & edit the default values:
 
     $ git clone https://github.com/jburos/query_tcga.git
+    $ vim query_tcga/query_tcga/defaults.py
     $ python setup.py install
     
 Contributing
