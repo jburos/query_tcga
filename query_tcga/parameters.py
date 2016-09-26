@@ -1,11 +1,11 @@
-
+from __future__ import absolute_import
 import json
-from query_tcga.log_with import log_with
-from query_tcga import defaults 
-from query_tcga.defaults import GDC_API_ENDPOINT
-from query_tcga import error_handling as _errors
-from query_tcga.cache import requests_get
-from query_tcga import helpers # import _convert_to_list
+from .log_with import log_with
+from . import defaults 
+from .defaults import GDC_API_ENDPOINT
+from . import error_handling as _errors
+from .cache import requests_get
+from . import helpers # import _convert_to_list
 
 #### ---- tools for constructing parameters ---- 
 @log_with()

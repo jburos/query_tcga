@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 import os
 import subprocess
 import pandas as pd
@@ -24,15 +24,15 @@ if cur_version <= py27_version:
     import api
     from super_list import L
 else:
-    from query_tcga.log_with import log_with
-    from query_tcga import defaults 
-    from query_tcga.defaults import GDC_API_ENDPOINT
-    from query_tcga import parameters as _params
-    from query_tcga import cache
-    from query_tcga.cache import requests_get
-    from query_tcga import helpers # import _compute_start_given_page, _convert
-    from query_tcga import api
-    from query_tcga.super_list import L
+    from .log_with import log_with
+    from . import defaults 
+    from .defaults import GDC_API_ENDPOINT
+    from . import parameters as _params
+    from . import cache
+    from .cache import requests_get
+    from . import helpers # import _compute_start_given_page, _convert
+    from . import api
+    from .super_list import L
 
 ## cache recquets depending on value of 
 cache.setup_cache()
@@ -45,7 +45,7 @@ cache.setup_cache()
 
 
 
-@log_with.log_with()
+@log_with()
 def _get_num_pages(project_name, endpoint_name, size=defaults.DEFAULT_SIZE,
                  n=None, data_category=None, query_args={}, verify=False):
     """ Get total number of pages for given criteria

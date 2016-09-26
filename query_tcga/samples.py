@@ -1,7 +1,8 @@
-from query_tcga import query_tcga as qt
+from __future__ import absolute_import
+from . import query_tcga as qt
 import varcode
 import pandas as pd
-from query_tcga import helpers, api
+from . import helpers, api
 
 #### ---- download other files ----
 

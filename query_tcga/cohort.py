@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import cohorts
-from query_tcga import query_tcga as qt
-from query_tcga import samples
-from query_tcga import helpers
+from . import query_tcga as qt
+from . import samples
+from . import helpers
 import numpy as np
 import pandas as pd
 
