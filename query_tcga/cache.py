@@ -1,4 +1,5 @@
-from query_tcga.defaults import USE_CACHE
+from __future__ import absolute_import
+from .defaults import USE_CACHE
 import requests
 import time
 
