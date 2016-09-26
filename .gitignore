@@ -28,6 +28,8 @@ pip-log.txt
 .coverage
 .tox
 nosetests.xml
+tests 
+ ## sample data for tests
 
 # Complexity
 output/*.html
