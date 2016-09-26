@@ -2,6 +2,9 @@ from __future__ import absolute_import
 from .defaults import USE_CACHE
 import requests
 import time
+from socket import error as SocketError
+import errno
+import logging
 
 def RateLimited(maxPerSecond):
     minInterval = 1.0 / float(maxPerSecond)
@@ -28,5 +31,13 @@ def setup_cache():
 @RateLimited(1)
 def requests_get(*args, **kwargs):
     time.sleep(2)
-    resp = requests.get(*args, **kwargs)
+    try:
+        resp = requests.get(*args, **kwargs)
+    except SocketError as e:
+        if e.errno != errno.ECONNRESET:
+            raise # Not error we are looking for
+        else:
+            logging.warning('Warning - connection reset by peer. Trying request again.')
+            time.sleep(12)
+            resp = requests.get(*args, **kwargs)
     return resp
