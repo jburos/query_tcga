@@ -1,4 +1,4 @@
-from ConfigParser import SafeConfigParser
+#from ConfigParser import SafeConfigParser
 from . import defaults
 import os
 import logging
@@ -41,11 +41,12 @@ def restore_default_settings():
 def load_config(config_file = 'config.ini'):
     """ Load config file into default settings
     """
+    raise ValueError('module not yet implemented')
     if not os.path.exists(config_file):
         logging.warning('Config file does not exist: {}. Using default settings.'.format(config_file))
         return False
     ## get user-level config in *.ini format
-    config = SafeConfigParser(allow_no_value=True)
+    #config = SafeConfigParser(allow_no_value=True)
     config.read(config_file)
     for (key, val) in config.getitems():
         _set_value(key, val)
