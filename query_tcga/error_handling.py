@@ -1,4 +1,5 @@
-from query_tcga.log_with import log_with
+from __future__ import absolute_import
+from .log_with import log_with
 
 @log_with()
 def raise_error_parsing_result(response):
