@@ -51,7 +51,7 @@ def prep_patient_data(row, snv_vcf_paths=None, **kwargs):
     assert pfs <= os, 'PFS {pfs} is not <= OS {os} for Patient {patid}'.format(pfs=pfs, os=os, patid=patient_id)
 
     patient = cohorts.Patient(
-        id=patient_id,
+        id=str(patient_id),
         deceased=deceased,
         progressed=progressed,
         os=os,
