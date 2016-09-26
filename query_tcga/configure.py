@@ -1,28 +1,72 @@
-from simple_settings import settings
+from ConfigParser import SafeConfigParser
 from . import defaults
+import os
+import logging
 
-## load default settings if not already defined
-default_settings = dict(
-	USE_CACHE=defaults.USE_CACHE, 
-	#GDC_TOKEN_PATH=defaults.GDC_TOKEN_PATH,
-	GDC_CLIENT_PATH=defaults.GDC_CLIENT_PATH,
-	GDC_API_ENDPOINT=defaults.GDC_API_ENDPOINT,
-	GDC_DATA_DIR=defaults.GDC_DATA_DIR,
-	# these are used since you cannot query them
-	VALID_ENDPOINTS=defaults.VALID_ENDPOINTS,
-	# number of records per page, by default
-	DEFAULT_SIZE=defaults.DEFAULT_SIZE,
-	# fields to pull for 'file-metadata' table
-	DEFAULT_FILE_FIELDS=defaults.DEFAULT_FILE_FIELDS,
-	DEFAULT_CHUNK_SIZE=defaults.DEFAULT_CHUNK_SIZE,
-	)
+## empty class to hold "current" settings
+class Settings:
+    pass
 
-def get_setting_value(setting_name, default_settings = default_settings, user_settings = settings.as_dict()):
-	## use user-level setting if defined 
-	if setting_name in user_settings:
-		return user_settings[setting_name]
-	## otherwise, use default value if defined
-	elif setting_name in default_settings:
-		return default_settings[setting_name]
-	else:
-		raise ValueError('Setting {setting_name} was not provided & is required.'.format(setting_name=setting_name))
+## module-wide collection of settings
+__DEFAULTS = Settings()
+__DEFAULTS.USE_CACHE = defaults.USE_CACHE
+__DEFAULTS.GDC_CLIENT_PATH = defaults.GDC_CLIENT_PATH
+__DEFAULTS.GDC_TOKEN_PATH = None
+__DEFAULTS.GDC_API_ENDPOINT = defaults.GDC_API_ENDPOINT
+__DEFAULTS.GDC_DATA_DIR = defaults.GDC_DATA_DIR
+__DEFAULTS.VALID_ENDPOINTS = defaults.VALID_ENDPOINTS
+__DEFAULTS.DEFAULT_SIZE = defaults.DEFAULT_SIZE
+__DEFAULTS.DEFAULT_FILE_FIELDS = defaults.DEFAULT_FILE_FIELDS
+__DEFAULTS.DEFAULT_CHUNK_SIZE = defaults.DEFAULT_CHUNK_SIZE
+
+
+REQUIRED_SETTINGS = ['GDC_TOKEN_PATH']
+
+def restore_default_settings():
+    """ Restore settings to default values. 
+    """
+    global __DEFAULTS
+    __DEFAULTS.USE_CACHE = defaults.USE_CACHE
+    __DEFAULTS.GDC_CLIENT_PATH = defaults.GDC_CLIENT_PATH
+    __DEFAULTS.GDC_TOKEN_PATH = None
+    __DEFAULTS.GDC_API_ENDPOINT = defaults.GDC_API_ENDPOINT
+    __DEFAULTS.GDC_DATA_DIR = defaults.GDC_DATA_DIR
+    __DEFAULTS.VALID_ENDPOINTS = defaults.VALID_ENDPOINTS
+    __DEFAULTS.DEFAULT_SIZE = defaults.DEFAULT_SIZE
+    __DEFAULTS.DEFAULT_FILE_FIELDS = defaults.DEFAULT_FILE_FIELDS
+    __DEFAULTS.DEFAULT_CHUNK_SIZE = defaults.DEFAULT_CHUNK_SIZE
+    logging.info('Settings reverted to their default values.')
+
+
+def load_config(config_file = 'config.ini'):
+    """ Load config file into default settings
+    """
+    if not os.path.exists(config_file):
+        logging.warning('Config file does not exist: {}. Using default settings.'.format(config_file))
+        return False
+    ## get user-level config in *.ini format
+    config = SafeConfigParser(allow_no_value=True)
+    config.read(config_file)
+    for (key, val) in config.getitems():
+        set_setting_value(key, val)
+
+
+def set_setting_value(setting_name, value):
+    global __DEFAULTS
+    setattr(__DEFAULTS, setting_name, value)
+    logging.info('Setting {name} = {value}'.format(name=setting_name, value=value))
+
+
+def get_setting_value(setting_name):
+    val = getattr(__DEFAULTS, setting_name)
+    if not setting_name in REQUIRED_SETTINGS:
+        return val
+    if val is not None:
+        return val
+    else:
+        raise ValueError('Setting {setting_name} was not provided & is required.'.format(setting_name=setting_name))
+
+
+#def write_config(file = 'config.ini', config = default_settings):
+#    with open(file, 'w') as f:
+#        config.write(f)

@@ -15,7 +15,7 @@ cur_version = sys.version_info
 if cur_version <= py27_version:
     sys.path.append('~/projects/tcga-blca/query_tcga')
     from log_with import log_with
-    from .configure import get_setting_value 
+    from .configure import get_setting_value
     import parameters as _params
     import cache
     from cache import requests_get
