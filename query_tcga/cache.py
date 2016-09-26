@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from .defaults import USE_CACHE
 import requests
 import time
-from socket import error as SocketError
 import errno
 import logging
 
@@ -40,4 +39,19 @@ def requests_get(*args, **kwargs):
             logging.warning('Warning - connection reset by peer. Trying request again.')
             time.sleep(12)
             resp = requests.get(*args, **kwargs)
+    return resp
+
+
+@RateLimited(1)
+def requests_post(*args, **kwargs):
+    time.sleep(10)
+    try:
+        resp = requests.post(*args, **kwargs)
+    except requests.ConnectionError as e:
+        if e.errno != errno.ECONNRESET:
+            raise # Not error we are looking for
+        else:
+            logging.warning('Warning - connection reset by peer. Trying request again.')
+            time.sleep(12)
+            resp = requests.post(*args, **kwargs)
     return resp
