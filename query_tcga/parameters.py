@@ -1,6 +1,6 @@
-
+from __future__ import absolute_import
 import json
-from query_tcga.log_with import log_with
+from .log_with import log_with
 from query_tcga import defaults 
 from query_tcga.defaults import GDC_API_ENDPOINT
 from query_tcga import error_handling as _errors
