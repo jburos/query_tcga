@@ -7,30 +7,15 @@ import numpy as np
 import tempfile
 import bs4
 import logging
-import sys
 
-py27_version = (2,7)
-cur_version = sys.version_info
-
-if cur_version <= py27_version:
-    sys.path.append('~/projects/tcga-blca/query_tcga')
-    from log_with import log_with
-    from .config import get_setting_value
-    import parameters as _params
-    import cache
-    from cache import requests_get
-    import helpers # import _compute_start_given_page, _convert
-    import api
-    from super_list import L
-else:
-    from .log_with import log_with
-    from .config import get_setting_value 
-    from . import parameters as _params
-    from . import cache
-    from .cache import requests_get
-    from . import helpers # import _compute_start_given_page, _convert
-    from . import api
-    from .super_list import L
+from .log_with import log_with
+from .config import get_setting_value 
+from . import parameters as _params
+from . import cache
+from .cache import requests_get
+from . import helpers # import _compute_start_given_page, _convert
+from . import api
+from .super_list import L
 
 ## cache recquets depending on value of 
 cache.setup_cache()
