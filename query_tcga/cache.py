@@ -30,10 +30,10 @@ def setup_cache():
 
 @RateLimited(1)
 def requests_get(*args, **kwargs):
-    time.sleep(2)
+    time.sleep(10)
     try:
         resp = requests.get(*args, **kwargs)
-    except SocketError as e:
+    except requests.ConnectionError as e:
         if e.errno != errno.ECONNRESET:
             raise # Not error we are looking for
         else:

@@ -55,6 +55,7 @@ def test_get_fileinfo_data_multiple_files():
     assert isinstance(res, pd.DataFrame)
     assert len(res.index)==2
 
+
 def test_get_fileinfo_data_file_details():
     clin = qt.get_clinical_data(project_name=TEST_PROJECT, data_dir=TEST_DATA_DIR, n=1)
     res = api.get_fileinfo_data(file_id = clin['_source_file_uuid'][0])
