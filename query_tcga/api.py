@@ -48,6 +48,7 @@ def get_data(endpoint_name, arg=None,
                                              )
 
     # requests URL-encodes automatically
+    log.info('submitting request for {endpoint} with params {params}'.format(endpoint=endpoint, params=params))
     response = requests_get(endpoint, params=params)
     response.raise_for_status()
     return response
