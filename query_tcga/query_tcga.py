@@ -45,7 +45,7 @@ cache.setup_cache()
 
 
 
-@log_with.log_with()
+@log_with()
 def _get_num_pages(project_name, endpoint_name, size=defaults.DEFAULT_SIZE,
                  n=None, data_category=None, query_args={}, verify=False):
     """ Get total number of pages for given criteria
