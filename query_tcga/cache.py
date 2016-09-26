@@ -20,11 +20,13 @@ def RateLimited(maxPerSecond):
 
 
 def setup_cache():
-	if USE_CACHE:
-		import requests_cache
-		requests_cache.install_cache(cache_name='github_cache', backend='sqlite', expire_after=180)
+    if USE_CACHE:
+        import requests_cache
+        requests_cache.install_cache(cache_name='github_cache', backend='sqlite', expire_after=180)
 
 
-@RateLimited(2)
+@RateLimited(1)
 def requests_get(*args, **kwargs):
-	return requests.get(*args, **kwargs)
+    time.sleep(2)
+    resp = requests.get(*args, **kwargs)
+    return resp
