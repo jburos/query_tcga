@@ -48,13 +48,18 @@ def load_config(config_file = 'config.ini'):
     config = SafeConfigParser(allow_no_value=True)
     config.read(config_file)
     for (key, val) in config.getitems():
-        set_setting_value(key, val)
+        _set_value(key, val)
 
 
-def set_setting_value(setting_name, value):
+def _set_value(setting_name, value):
     global __DEFAULTS
     setattr(__DEFAULTS, setting_name, value)
     logging.info('Setting {name} = {value}'.format(name=setting_name, value=value))
+
+
+def set_value(**kwargs):
+    for (key, val) in dict(**kwargs).getitems():
+        _set_value(key, val)
 
 
 def get_setting_value(setting_name):
