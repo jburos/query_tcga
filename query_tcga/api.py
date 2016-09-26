@@ -1,12 +1,13 @@
+from __future__ import absolute_import
 import pandas as pd
 import io
 import logging
-from query_tcga.log_with import log_with
-from query_tcga import defaults 
-from query_tcga.defaults import GDC_API_ENDPOINT
-from query_tcga import parameters as _params
-from query_tcga.cache import requests_get
-from query_tcga import helpers
+from .log_with import log_with
+from . import defaults 
+from .defaults import GDC_API_ENDPOINT
+from . import parameters as _params
+from .cache import requests_get
+from . import helpers
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
