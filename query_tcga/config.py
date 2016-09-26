@@ -58,8 +58,9 @@ def _set_value(setting_name, value):
 
 
 def set_value(**kwargs):
-    for (key, val) in dict(**kwargs).getitems():
-        _set_value(key, val)
+    args = dict(**kwargs)
+    for key in args:
+        _set_value(key, args[key])
 
 
 def get_setting_value(setting_name):
