@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 import json
 from .log_with import log_with
-from . import defaults 
-from .defaults import GDC_API_ENDPOINT
+from .config import get_setting_value
 from . import error_handling as _errors
 from .cache import requests_get
 from . import helpers # import _convert_to_list
@@ -103,8 +102,8 @@ def _list_valid_fields(endpoint_name):
     ['files.access', 'files.acl', 'files.analysis.analysis_id']
 
     """
-    _verify_data_list(data_list=[endpoint_name], allowed_values=defaults.VALID_ENDPOINTS)
-    endpoint = GDC_API_ENDPOINT.format(endpoint=endpoint_name)+'/_mapping'
+    _verify_data_list(data_list=[endpoint_name], allowed_values=get_setting_value('VALID_ENDPOINTS'))
+    endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint=endpoint_name)+'/_mapping'
     response = requests_get(endpoint)
     response.raise_for_status()
     field_names = response.json()['_mapping'].keys()
@@ -139,7 +138,7 @@ def _list_valid_options(field_name,
     """
     # according to https://gdc-docs.nci.nih.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
     # this is the best way to query the endpoint for values
-    endpoint = GDC_API_ENDPOINT.format(endpoint=endpoint_name)
+    endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint=endpoint_name)
     if strip_endpoint_from_field_name:
         field_name = field_name.replace('{}.'.format(endpoint_name), '')
     params = construct_parameters(project_name=project_name, facets=field_name, size=0)
