@@ -2,6 +2,7 @@
 from . import defaults
 import os
 import logging
+import configparser
 
 ## empty class to hold "current" settings
 class Settings:
@@ -38,18 +39,20 @@ def restore_default_settings():
     logging.info('Settings reverted to their default values.')
 
 
-def load_config(config_file = 'config.ini'):
+def load_config(config_file='~/.query_tcga.ini'):
     """ Load config file into default settings
     """
-    raise ValueError('module not yet implemented')
     if not os.path.exists(config_file):
         logging.warning('Config file does not exist: {}. Using default settings.'.format(config_file))
-        return False
+        return
     ## get user-level config in *.ini format
-    #config = SafeConfigParser(allow_no_value=True)
+    config = configparser.ConfigParser()
     config.read(config_file)
-    for (key, val) in config.getitems():
-        _set_value(key, val)
+    if not config.has_section('main'):
+        raise ValueError('Config file {} has no section "main"'.format(config_file))
+    for (key, val) in config['main'].items():
+        _set_value(key.upper(), val)
+    return
 
 
 def _set_value(setting_name, value):
