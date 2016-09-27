@@ -1,5 +1,5 @@
 # whether to use requests-cache 
-USE_CACHE = False
+USE_CACHE = True
 ## location of token authorizing download
 GDC_TOKEN_PATH = '/Users/jacquelineburos/Downloads/gdc-user-token.2016-09-12T16-39-34-04-00.txt'
 ## path to gdc-client
