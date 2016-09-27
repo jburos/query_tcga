@@ -54,7 +54,7 @@ def _prep_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     return vcf_fileinfo_agg
 
 
-def build_cohort_patient(row, **kwargs):
+def build_cohort_patient(row, benefit_days, **kwargs):
     patient_id = row['case_id']
     deceased = row['vital_status'] != 'Alive'
     progressed = row['treatment_outcome_at_tcga_followup'] != 'Complete Response'
@@ -93,7 +93,7 @@ def build_cohort_patient(row, **kwargs):
 
     pfs = min(pfs, os) ## force progressed time to be < os 
 
-    benefit = pfs <= 365.25
+    benefit = pfs <= benefit_days
 
     assert(not np.isnan(pfs))
     assert(not np.isnan(os))
@@ -128,7 +128,8 @@ def _merge_filepath_with_fileinfo(files):
 
 
 
-def prep_patients(project_name, data_dir=get_setting_value('GDC_DATA_DIR'), include_vcfs=True, project_data_dir='data', cache_dir='data-cache', **kwargs):
+def prep_patients(project_name, data_dir=get_setting_value('GDC_DATA_DIR'), benefit_days=365.25,
+                 include_vcfs=True, project_data_dir='data', cache_dir='data-cache', **kwargs):
     """ Given a project_name, return a list of cohorts.Patient objects
     """
     ## try to load config file, if it exists
@@ -148,7 +149,7 @@ def prep_patients(project_name, data_dir=get_setting_value('GDC_DATA_DIR'), incl
 
     patients = []
     for (i, row) in clinical_data.iterrows():
-        patients.append(build_cohort_patient(row))
+        patients.append(build_cohort_patient(row, benefit_days=benefit_days))
     return patients
 
 
