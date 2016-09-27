@@ -40,7 +40,7 @@ def requests_get(*args, **kwargs):
     global SESSION
     time.sleep(10)
     try:
-        resp = SESSION.get(*args, timeout=5, **kwargs)
+        resp = SESSION.get(*args, **kwargs)
     except requests.ConnectionError as e:
         if e.errno != 54:
             raise # Not error we are looking for
