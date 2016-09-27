@@ -67,7 +67,8 @@ def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
     row['censor_time'] = censor_time
     row['progressed'] = progressed
     row['deceased'] = deceased
-
+    row['age'] = -1*row['birth_days_to']/365.25
+    
     censor_time = censor_time or 0
     if np.isnan(censor_time):
         censor_time = max(progressed_time, deceased_time, censor_time)
