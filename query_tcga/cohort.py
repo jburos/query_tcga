@@ -54,7 +54,7 @@ def _prep_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     return vcf_fileinfo_agg
 
 
-def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
+def build_cohort_patient(row, **kwargs):
     patient_id = row['case_id']
     deceased = row['vital_status'] != 'Alive'
     progressed = row['treatment_outcome_at_tcga_followup'] != 'Complete Response'
@@ -68,7 +68,7 @@ def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
     row['progressed'] = progressed
     row['deceased'] = deceased
     row['age'] = -1*row['birth_days_to']/365.25
-    
+
     censor_time = censor_time or 0
     if np.isnan(censor_time):
         censor_time = max(progressed_time, deceased_time, censor_time)
@@ -99,6 +99,12 @@ def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
     assert(not np.isnan(os))
     assert pfs <= os, 'PFS {pfs} is not <= OS {os} for Patient {patid}'.format(pfs=pfs, os=os, patid=patient_id)
 
+    # capture snv_vcf_paths, if they exist
+    if 'snv_vcf_paths' in row.keys() and isinstance(row['snv_vcf_paths'], list):
+        snv_vcf_paths = helpers.convert_to_list(row['snv_vcf_paths'])
+    else:
+        snv_vcf_paths = None
+
     patient = cohorts.Patient(
         id=str(patient_id),
         deceased=deceased,
@@ -108,6 +114,7 @@ def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
         benefit=benefit,
         additional_data=row,
         snv_vcf_paths=snv_vcf_paths,
+        **kwargs
     )
     return(patient)
 
