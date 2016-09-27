@@ -469,7 +469,7 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
     data['_source_file_uuid'] = file_id
     ## get file meta-data (for case_id & submitter_id):
     if fileinfo is not None:
-        fileinfo = api.get_fileinfo_data(file_id=file_id)['case_id'][0]
+        fileinfo = api.get_fileinfo_data(file_id=file_id)
     data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
     data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
     return data
