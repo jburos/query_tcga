@@ -9,10 +9,6 @@ import numpy as np
 import pandas as pd
 import logging
 import os
-from cachetools import LRUCache, cached
-
-__CACHE = LRUCache(maxsize=2)
-
 
 def _get_file_path(project_data_dir, file_type):
     return os.path.join(project_data_dir, '{}.csv'.format(file_type))
@@ -31,7 +27,6 @@ def _try_save_file(dataframe, project_data_dir=None, file_type='generic'):
         dataframe.to_csv(file_path, sep='|', index=False)
 
 
-@cached(cache=__CACHE)
 def _load_clinical_data(project_name, data_dir, project_data_dir=None, **kwargs):
     clinical_data = _try_get_file(project_data_dir, file_type='clinical')
     if clinical_data is None:
@@ -40,7 +35,6 @@ def _load_clinical_data(project_name, data_dir, project_data_dir=None, **kwargs)
     return clinical_data
 
 
-@cached(cache=__CACHE)
 def _load_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     vcf_fileinfo = _try_get_file(project_data_dir, file_type='vcf_fileinfo')
     if vcf_fileinfo is None:
@@ -50,13 +44,12 @@ def _load_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     return vcf_fileinfo
 
 
-@cached(cache=__CACHE)
 def _prep_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     all_vcf_fileinfo = _load_vcf_fileinfo(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
     vcf_fileinfo = all_vcf_fileinfo.loc[:,['submitter_id','filepath']]
     vcf_fileinfo.rename(columns = {'filepath': 'snv_vcf_paths'}, inplace=True)
     vcf_fileinfo['patient_id'] = vcf_fileinfo['submitter_id'].apply(lambda x: x.split('-')[2])
-    vcf_fileinfo['snv_vcf_paths'] = vcf_fileinfo['snv_vcf_paths'].apply(query_tcga.helpers.convert_to_list)
+    vcf_fileinfo['snv_vcf_paths'] = vcf_fileinfo['snv_vcf_paths'].apply(helpers.convert_to_list)
     vcf_fileinfo_agg = vcf_fileinfo.groupby('patient_id').agg({'snv_vcf_paths': 'sum'}).reset_index()
     return vcf_fileinfo_agg
 
