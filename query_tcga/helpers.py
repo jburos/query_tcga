@@ -7,7 +7,7 @@ import os
 def compute_start_given_page(page, size):
     """ compute start / from position given page & size
     """
-    return (page*size+1)
+    return (int(page)*int(size)+1)
 
 @log_with()
 def convert_to_list(x):
