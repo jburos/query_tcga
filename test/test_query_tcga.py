@@ -1,5 +1,6 @@
 
 from query_tcga import query_tcga as qt
+from query_tcga import config
 import pytest
 import shutil
 import pandas as pd
@@ -9,11 +10,12 @@ from query_tcga.log_with import log_with
 import logging
 
 
+TEST_DATA_DIR='test/test_data'
+config.set_value(GDC_DATA_DIR=TEST_DATA_DIR, GDC_TOKEN_PATH='/Users/jacquelineburos/Downloads/gdc-user-token.2016-09-26T12-23-27-04-00.txt')
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-DATA_DIR = 'tests/test_data'
 
 manifest = pytest.mark.NAME
 
@@ -68,9 +70,9 @@ def test_get_manifest_using_n():
 @log_with()
 @manifest
 def test_download_files_using_page():
-    _rmdir_if_exists(DATA_DIR)
+    _rmdir_if_exists(TEST_DATA_DIR)
     res = qt.download_files(project_name='TCGA-BLCA', data_category='Clinical',
-         pages=1, size=5, data_dir=DATA_DIR)
+         pages=1, size=5, data_dir=TEST_DATA_DIR)
     assert isinstance(res, list)
     assert len(res) == 5
 
@@ -78,7 +80,7 @@ def test_download_files_using_page():
 @manifest
 def test_download_files_using_n():
     res = qt.download_files(project_name='TCGA-BLCA', data_category='Clinical',
-         n=5, data_dir=DATA_DIR)
+         n=5, data_dir=TEST_DATA_DIR)
     assert isinstance(res, list)
     assert len(res) == 5
 
@@ -91,15 +93,15 @@ def _rmdir_if_exists(*args, **kwargs):
 
 @manifest
 def test_download_clinical_files():
-    _rmdir_if_exists(DATA_DIR)
-    res = qt.download_clinical_files(project_name='TCGA-BLCA', n=5, data_dir=DATA_DIR)
+    _rmdir_if_exists(TEST_DATA_DIR)
+    res = qt.download_clinical_files(project_name='TCGA-BLCA', n=5, data_dir=TEST_DATA_DIR)
     assert isinstance(res, list)
     assert len(res) == 5
 
 
 @manifest
 def test_get_clinical_data():
-    res = qt.get_clinical_data(project_name='TCGA-BLCA', n=5, data_dir=DATA_DIR)
+    res = qt.get_clinical_data(project_name='TCGA-BLCA', n=5, data_dir=TEST_DATA_DIR)
     assert isinstance(res, pd.DataFrame)
     assert len(res.index) == 5
     assert '_source_type' in res.columns
@@ -111,17 +113,17 @@ def test_get_clinical_data():
 def test_list_failed_downloads():
     _rmdir_if_exists(DATA_DIR)
     manifest_contents = qt.get_manifest(project_name='TCGA-BLCA', data_category='Clinical', n=5)
-    failed = qt._list_failed_downloads(manifest_contents=manifest_contents, data_dir=DATA_DIR)
+    failed = qt._list_failed_downloads(manifest_contents=manifest_contents, data_dir=TEST_DATA_DIR)
     assert len(failed) == 5
-    qt.download_clinical_files(project_name='TCGA-BLCA', n=5, data_dir=DATA_DIR)
-    new_failed = qt._list_failed_downloads(manifest_contents=manifest_contents, data_dir=DATA_DIR)
+    qt.download_clinical_files(project_name='TCGA-BLCA', n=5, data_dir=TEST_DATA_DIR)
+    new_failed = qt._list_failed_downloads(manifest_contents=manifest_contents, data_dir=TEST_DATA_DIR)
     assert isinstance(new_failed, list)
     assert len(new_failed) == 0
 
 
 def test_download_from_manifest():
     manifest_contents = qt.get_manifest(project_name='TCGA-BLCA', data_category='Clinical', n=5)
-    downloaded = qt.download_from_manifest(manifest_contents=manifest_contents, data_dir=DATA_DIR)
+    downloaded = qt.download_from_manifest(manifest_contents=manifest_contents, data_dir=TEST_DATA_DIR)
     assert isinstance(downloaded, list)
     assert len(manifest_contents.splitlines()) == len(downloaded)+1
 

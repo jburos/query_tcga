@@ -1,8 +1,11 @@
 from query_tcga import parameters
-from query_tcga import helpers
+from query_tcga import helpers, config
 import pytest
 import shutil
 import pandas as pd
+
+TEST_DATA_DIR='test/test_data'
+config.set_value(GDC_DATA_DIR=TEST_DATA_DIR, GDC_TOKEN_PATH='/Users/jacquelineburos/Downloads/gdc-user-token.2016-09-26T12-23-27-04-00.txt')
 
 
 def test_construct_filter_parameters():

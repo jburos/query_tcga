@@ -1,10 +1,8 @@
 from __future__ import absolute_import
 import pandas as pd
-import io
 import logging
 from .log_with import log_with
-from . import defaults 
-from .defaults import GDC_API_ENDPOINT
+from .config import get_setting_value 
 from . import parameters as _params
 from .cache import requests_get
 from . import helpers
@@ -17,14 +15,14 @@ log.setLevel(logging.DEBUG)
 
 @log_with()
 def get_data(endpoint_name, arg=None,
-              project_name=None, fields=None, size=defaults.DEFAULT_SIZE, page=0,
+              project_name=None, fields=None, size=get_setting_value('DEFAULT_SIZE'), page=0,
               data_category=None, query_args={}, verify=False, *args, **kwargs):
     """ Get single result from querying GDC api endpoint
 
     >>> file = get_data(endpoint='files', data_category='Clinical', query_args=dict(file_id=df['case_uuid'][0]))
     <Response [200]>
     """
-    endpoint = GDC_API_ENDPOINT.format(endpoint=endpoint_name)
+    endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint=endpoint_name)
     if arg:
         endpoint = endpoint+'/{}'.format(arg)
     else:
@@ -50,14 +48,16 @@ def get_data(endpoint_name, arg=None,
                                              )
 
     # requests URL-encodes automatically
+    log.info('submitting request for {endpoint} with params {params}'.format(endpoint=endpoint, params=params))
     response = requests_get(endpoint, params=params)
+    log.info('url requested was: {}'.format(response.url))
     response.raise_for_status()
     return response
 
 
 @log_with()
 def _get_case_data(arg=None,
-              project_name=None, fields=None, size=defaults.DEFAULT_SIZE, page=1,
+              project_name=None, fields=None, size=get_setting_value('DEFAULT_SIZE'), page=1,
               data_category=None, query_args={}, verify=False, **kwargs):
     """ Get single case json matching project_name & categories
 
@@ -75,7 +75,7 @@ def _get_sample_data():
 
 
 @log_with()
-def get_fileinfo(file_id, fields=defaults.DEFAULT_FILE_FIELDS, format=None):
+def get_fileinfo(file_id, fields=get_setting_value('DEFAULT_FILE_FIELDS'), format=None):
     query_args = {'files.file_id': file_id}
     response = get_data(endpoint_name='files', query_args=query_args, fields=fields, format=format)
     if format == 'json':
@@ -84,7 +84,10 @@ def get_fileinfo(file_id, fields=defaults.DEFAULT_FILE_FIELDS, format=None):
         return response
 
 
-def get_fileinfo_data(file_id, fields=defaults.DEFAULT_FILE_FIELDS, chunk_size=defaults.DEFAULT_CHUNK_SIZE):
+def get_fileinfo_data(file_id,
+                      fields=get_setting_value('DEFAULT_FILE_FIELDS'),
+                      chunk_size=get_setting_value('DEFAULT_CHUNK_SIZE')
+                      ):
     file_id = helpers.convert_to_list(file_id)
     if len(file_id)>chunk_size:
         chunks = [file_id[x:x+chunk_size] for x in range(0, len(file_id), chunk_size)]

@@ -1,5 +1,7 @@
 *.py[cod]
 
+data
+
 # C extensions
 *.so
 
@@ -28,7 +30,7 @@ pip-log.txt
 .coverage
 .tox
 nosetests.xml
-tests 
+test/test_data
  ## sample data for tests
 
 # Complexity

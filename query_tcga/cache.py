@@ -1,7 +1,11 @@
 from __future__ import absolute_import
-from .defaults import USE_CACHE
+from .config import get_setting_value
 import requests
 import time
+import errno
+import logging
+
+SESSION = requests.Session()
 
 def RateLimited(maxPerSecond):
     minInterval = 1.0 / float(maxPerSecond)
@@ -20,11 +24,47 @@ def RateLimited(maxPerSecond):
 
 
 def setup_cache():
-	if USE_CACHE:
-		import requests_cache
-		requests_cache.install_cache(cache_name='github_cache', backend='sqlite', expire_after=180)
+    global SESSION
+    if get_setting_value('USE_CACHE'):
+        import requests_cache
+        requests_cache.install_cache(cache_name='gdc_cache', backend='sqlite', expire_after=18000)
+    #   import cachecontrol
+    #   from cachecontrol.caches import FileCache
+    #   SESSION = cachecontrol.CacheControl(requests.Session(), cache=FileCache('.web_cache', forever=True))
+    #else:
+    #    SESSION = requests.Session()
 
 
-@RateLimited(2)
+@RateLimited(1)
 def requests_get(*args, **kwargs):
-	return requests.get(*args, **kwargs)
+    global SESSION
+    time.sleep(10)
+    try:
+        resp = SESSION.get(*args, **kwargs)
+    except requests.ConnectionError as e:
+        if e.errno != 54:
+            raise # Not error we are looking for
+        else:
+            logging.warning('Warning - connection reset by peer. Trying request again.')
+            time.sleep(12)
+            resp = SESSION.get(*args, **kwargs)
+    return resp
+
+
+@RateLimited(1)
+def requests_post(*args, **kwargs):
+    time.sleep(1)
+    try:
+        resp = requests.post(*args, **kwargs)
+    except requests.ConnectionError as e:
+        if e.errno != errno.ECONNRESET:
+            raise # Not error we are looking for
+        else:
+            logging.warning('Warning - connection reset by peer. Trying request again.')
+            time.sleep(12)
+            resp = requests.post(*args, **kwargs)
+    return resp
+
+
+if get_setting_value('USE_CACHE'):
+    setup_cache()
