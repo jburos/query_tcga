@@ -1,6 +1,7 @@
 *.py[cod]
 
 data
+gdc_cache.sqlite
 
 # C extensions
 *.so
