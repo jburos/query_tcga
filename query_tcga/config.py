@@ -50,7 +50,7 @@ def load_config(config_file='~/.query_tcga.ini'):
     config.read(config_file)
     if not config.has_section('main'):
         raise ValueError('Config file {} has no section "main"'.format(config_file))
-    for (key, val) in config['main'].items():
+    for (key, val) in config.items('main'):
         _set_value(key.upper(), val)
     return
 
