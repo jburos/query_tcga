@@ -468,10 +468,20 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
     #data['submitter_id'] = soup.findChild('submitter_id').text
     data['_source_file_uuid'] = file_id
     ## get file meta-data (for case_id & submitter_id):
-    if fileinfo is not None:
-        fileinfo = api.get_fileinfo_data(file_id=file_id)['case_id'][0]
-    data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
-    data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
+    if fileinfo is None:
+        fileinfo = api.get_fileinfo_data(file_id=file_id)
+    try:
+        data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
+        data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
+    except:
+        logging.info('Unable to extract case & submitter ids from fileinfo for file {}. Trying again.'.format(file_id))
+        fileinfo = api.get_fileinfo_data(file_id=file_id)
+        try:
+            data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
+            data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
+        except:
+            logging.warning('Unable to extract case & submitter ids from fileinfo for file {}. Using NaN'.format(file_id))
+            pass
     return data
 
 

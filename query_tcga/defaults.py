@@ -1,7 +1,7 @@
 # whether to use requests-cache 
 USE_CACHE = True
 ## location of token authorizing download
-GDC_TOKEN_PATH = '/Users/jacquelineburos/Downloads/gdc-user-token.2016-09-12T16-39-34-04-00.txt'
+#GDC_TOKEN_PATH = 
 ## path to gdc-client
 GDC_CLIENT_PATH = '/usr/local/bin/gdc-client'
 ## API endpoint base URL (contains version, etc)
