@@ -72,32 +72,37 @@ def _merge_filepath_with_fileinfo(files):
     return pd.merge(fileinfo, filepath_data, on='file_id')
 
 
-def prep_cohort_patients(project_name, include_vcfs=True, n=None, **kwargs):
+def prep_cohort_patients(project_name, include_vcfs=True, n=None, vcf_fileinfo=None, **kwargs):
     """ Given a project_name, return a list of cohorts.Patient objects
     """
     clin = qt.get_clinical_data(project_name=project_name, n=n, **kwargs)
-    vcf_fileinfo = None
     if not n and include_vcfs:
-        all_vcf_files = samples.download_vcf_files(project_name=project_name, **kwargs)
-        vcf_fileinfo = _merge_filepath_with_fileinfo(all_vcf_files)
+        if vcf_fileinfo is None:
+            all_vcf_files = samples.download_vcf_files(project_name=project_name, **kwargs)
+            vcf_fileinfo = _merge_filepath_with_fileinfo(all_vcf_files)
+        else:
+            vcf_fileinfo = _merge_filepath_with_fileinfo(all_vcf_files) 
     patients = []
     for (i, row) in clin.iterrows():
-        if include_vcfs:
-            if vcf_fileinfo is None:
+        if include_vcfs and vcf_fileinfo is None:
                 try:
                     vcf_files = samples.download_vcf_files(query_args={'cases.case_id': row['case_id']},
-                     project_name=project_name)
+                                                           project_name=project_name)
                 except:
                     logging.warning('No VCF file found for case: {}'.format(row['case_id']))
                     patients.append(prep_patient_data(row))
-                finally:
+                else:
                     patients.append(prep_patient_data(row, snv_vcf_paths=vcf_files))
-            else:
+        elif include_vcfs:
                 vcf_files = vcf_fileinfo.loc[vcf_fileinfo['case_id']==row['case_id'], 'file_path']
-                patients.append(prep_patient_data(row, snv_vcf_paths=vcf_files))
+                if len(vcf_files)>0:
+                    patients.append(prep_patient_data(row, snv_vcf_paths=vcf_files))
+                else:
+                    patients.append(prep_patient_data(row))
         else:
             patients.append(prep_patient_data(row))
     return patients
+
 
 def prep_cohort(patients, cache_dir='data-cache', **kwargs):
     """ Given a list of patients, create a `cohorts.Cohort`
