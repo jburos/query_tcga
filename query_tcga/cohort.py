@@ -4,6 +4,7 @@ from . import query_tcga as qt
 from . import samples
 from . import helpers
 from .config import get_setting_value
+from . import config
 import numpy as np
 import pandas as pd
 import logging
@@ -18,7 +19,7 @@ def _get_file_path(project_data_dir, file_type):
 
 def _try_get_file(project_data_dir=None, file_type='generic'):
     if project_data_dir:
-        file_path = _get_file_path(project_data_dir, file_type)
+        file_path = _get_file_path(project_data_dir=project_data_dir, file_type=file_type)
         if os.path.exists(file_path):
             dataframe = pd.read_csv(file_path, sep='|')
             return dataframe
@@ -26,31 +27,31 @@ def _try_get_file(project_data_dir=None, file_type='generic'):
 
 def _try_save_file(dataframe, project_data_dir=None, file_type='generic'):
     if project_data_dir:
-        file_path = _get_file_path(project_data_dir, file_type)
+        file_path = _get_file_path(project_data_dir=project_data_dir, file_type=file_type)
         dataframe.to_csv(file_path, sep='|', index=False)
 
 
 @cached(cache=__CACHE)
-def _load_clinical_data(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+def _load_clinical_data(project_name, data_dir, project_data_dir=None, **kwargs):
     clinical_data = _try_get_file(project_data_dir, file_type='clinical')
     if clinical_data is None:
-        clinical_data = qt.get_clinical_data(project_name=project_name, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs)
+        clinical_data = qt.get_clinical_data(project_name=project_name, data_dir=data_dir, **kwargs)
         _try_save_file(clinical_data, project_data_dir=project_data_dir, file_type='clinical')
     return clinical_data
 
 
 @cached(cache=__CACHE)
-def _load_vcf_fileinfo(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+def _load_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     vcf_fileinfo = _try_get_file(project_data_dir, file_type='vcf_fileinfo')
     if vcf_fileinfo is None:
-        vcf_files = samples.download_vcf_files(project_name=project_name, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs)
+        vcf_files = samples.download_vcf_files(project_name=project_name, data_dir=data_dir, **kwargs)
         vcf_fileinfo = vcf_files.fileinfo
         _try_save_file(vcf_fileinfo, project_data_dir=project_data_dir, file_type='vcf_fileinfo')
     return vcf_fileinfo
 
 
 @cached(cache=__CACHE)
-def _prep_vcf_fileinfo(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+def _prep_vcf_fileinfo(project_name, data_dir, project_data_dir=None, **kwargs):
     all_vcf_fileinfo = _load_vcf_fileinfo(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
     vcf_fileinfo = all_vcf_fileinfo.loc[:,['submitter_id','filepath']]
     vcf_fileinfo.rename(columns = {'filepath': 'snv_vcf_paths'}, inplace=True)
@@ -126,9 +127,13 @@ def _merge_filepath_with_fileinfo(files):
 
 
 
-def prep_patients(project_name, include_vcfs=True, project_data_dir='data', cache_dir='data-cache', **kwargs):
+def prep_patients(project_name, data_dir=get_setting_value('GDC_DATA_DIR'), include_vcfs=True, project_data_dir='data', cache_dir='data-cache', **kwargs):
     """ Given a project_name, return a list of cohorts.Patient objects
     """
+    ## try to load config file, if it exists
+    if os.path.exists('config.ini'):
+        config.load_config('config.ini')
+
     clinical_data = _load_clinical_data(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
 
     # merge clinical & vcf data
