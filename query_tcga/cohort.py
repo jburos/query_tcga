@@ -3,11 +3,64 @@ import cohorts
 from . import query_tcga as qt
 from . import samples
 from . import helpers
+from .config import get_setting_value
 import numpy as np
 import pandas as pd
 import logging
+import os
+from cachetools import LRUCache, cached
 
-def prep_patient_data(row, snv_vcf_paths=None, **kwargs):
+__CACHE = LRUCache(maxsize=2)
+
+
+def _get_file_path(project_data_dir, file_type):
+    return os.path.join(project_data_dir, '{}.csv'.format(file_type))
+
+def _try_get_file(project_data_dir=None, file_type='generic'):
+    if project_data_dir:
+        file_path = _get_file_path(project_data_dir, file_type)
+        if os.path.exists(file_path):
+            dataframe = pd.read_csv(file_path, sep='|')
+            return dataframe
+    return None
+
+def _try_save_file(dataframe, project_data_dir=None, file_type='generic'):
+    if project_data_dir:
+        file_path = _get_file_path(project_data_dir, file_type)
+        dataframe.to_csv(file_path, sep='|', index=False)
+
+
+@cached(cache=__CACHE)
+def _load_clinical_data(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+    clinical_data = _try_get_file(project_data_dir, file_type='clinical')
+    if clinical_data is None:
+        clinical_data = qt.get_clinical_data(project_name=project_name, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs)
+        _try_save_file(clinical_data, project_data_dir=project_data_dir, file_type='clinical')
+    return clinical_data
+
+
+@cached(cache=__CACHE)
+def _load_vcf_fileinfo(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+    vcf_fileinfo = _try_get_file(project_data_dir, file_type='vcf_fileinfo')
+    if vcf_fileinfo is None:
+        vcf_files = samples.download_vcf_files(project_name=project_name, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs)
+        vcf_fileinfo = vcf_files.fileinfo
+        _try_save_file(vcf_fileinfo, project_data_dir=project_data_dir, file_type='vcf_fileinfo')
+    return vcf_fileinfo
+
+
+@cached(cache=__CACHE)
+def _prep_vcf_fileinfo(project_name, project_data_dir=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+    all_vcf_fileinfo = _load_vcf_fileinfo(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
+    vcf_fileinfo = all_vcf_fileinfo.loc[:,['submitter_id','filepath']]
+    vcf_fileinfo.rename(columns = {'filepath': 'snv_vcf_paths'}, inplace=True)
+    vcf_fileinfo['patient_id'] = vcf_fileinfo['submitter_id'].apply(lambda x: x.split('-')[2])
+    vcf_fileinfo['snv_vcf_paths'] = vcf_fileinfo['snv_vcf_paths'].apply(query_tcga.helpers.convert_to_list)
+    vcf_fileinfo_agg = vcf_fileinfo.groupby('patient_id').agg({'snv_vcf_paths': 'sum'}).reset_index()
+    return vcf_fileinfo_agg
+
+
+def build_cohort_patient(row, snv_vcf_paths=None, **kwargs):
     patient_id = row['case_id']
     deceased = row['vital_status'] != 'Alive'
     progressed = row['treatment_outcome_at_tcga_followup'] != 'Complete Response'
@@ -72,34 +125,24 @@ def _merge_filepath_with_fileinfo(files):
     return pd.merge(fileinfo, filepath_data, on='file_id')
 
 
-def prep_cohort_patients(project_name, include_vcfs=True, n=None, all_vcfs=None, **kwargs):
+
+def prep_patients(project_name, include_vcfs=True, project_data_dir='data', cache_dir='data-cache', **kwargs):
     """ Given a project_name, return a list of cohorts.Patient objects
     """
-    clin = qt.get_clinical_data(project_name=project_name, n=n, **kwargs)
-    vcf_fileinfo = None
-    if not n and include_vcfs:
-        if all_vcfs is None:
-            all_vcfs = samples.download_vcf_files(project_name=project_name, **kwargs)
-        vcf_fileinfo = _merge_filepath_with_fileinfo(all_vcf_files)
+    clinical_data = _load_clinical_data(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
+
+    # merge clinical & vcf data
+    if include_vcfs:
+        vcf_fileinfo = _prep_vcf_fileinfo(project_name=project_name, project_data_dir=project_data_dir, data_dir=data_dir, **kwargs)
+        clinical_data = clinical_data.merge(vcf_fileinfo, on='patient_id', how='left')
+        assert clinical_data['snv_vcf_paths'].count()>0
+        clinical_data.dropna(subset=['snv_vcf_paths'], inplace=True, axis=0)
+    
+    assert clinical_data.duplicated('patient_id').any() == False, 'Duplicates by patient_id'
+
     patients = []
-    for (i, row) in clin.iterrows():
-        if include_vcfs and vcf_fileinfo is None:
-                try:
-                    vcf_files = samples.download_vcf_files(query_args={'cases.case_id': row['case_id']},
-                                                           project_name=project_name)
-                except:
-                    logging.warning('No VCF file found for case: {}'.format(row['case_id']))
-                    patients.append(prep_patient_data(row))
-                else:
-                    patients.append(prep_patient_data(row, snv_vcf_paths=vcf_files))
-        elif include_vcfs:
-                vcf_files = vcf_fileinfo.loc[vcf_fileinfo['case_id']==row['case_id'], 'file_path']
-                if len(vcf_files)>0:
-                    patients.append(prep_patient_data(row, snv_vcf_paths=vcf_files))
-                else:
-                    patients.append(prep_patient_data(row))
-        else:
-            patients.append(prep_patient_data(row))
+    for (i, row) in clinical_data.iterrows():
+        patients.append(build_cohort_patient(row))
     return patients
 
 
