@@ -23,6 +23,5 @@ VALID_ENDPOINTS = ['files', 'projects', 'cases', 'annotations']
 # number of records per page, by default
 DEFAULT_SIZE = 50
 # fields to pull for 'file-metadata' table
-DEFAULT_FILE_FIELDS=['file_id','file_name','cases.submitter_id','cases.case_id','data_category','data_type','cases.samples.tumor_descriptor','cases.samples.tissue_type','cases.samples.sample_type','cases.samples.submitter_id','cases.samples.sample_id',
-					'analysis.analysis_id', 'files.analysis.workflow_type']
+DEFAULT_FILE_FIELDS=['file_id','file_name','cases.submitter_id','cases.case_id','data_category','data_type','cases.samples.tumor_descriptor','cases.samples.tissue_type','cases.samples.sample_type','cases.samples.submitter_id','cases.samples.sample_id', 'analysis.analysis_id', 'files.analysis.workflow_type']
 DEFAULT_CHUNK_SIZE=30
