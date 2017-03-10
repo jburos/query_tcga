@@ -486,7 +486,8 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
     #data['submitter_id'] = soup.findChild('submitter_id').text
     data['_source_file_uuid'] = file_id
     ## get file meta-data (for case_id & submitter_id):
-    if fileinfo is None:
+    if fileinfo is None or len(fileinfo.index) == 0:
+        logger.debug('fileinfo is none - getting from file_id')
         fileinfo = api.get_fileinfo_data(file_id=file_id)
     try:
         data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
@@ -498,6 +499,8 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
             data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
             data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
         except:
+            import pdb
+            pdb.set_trace()
             logging.warning('Unable to extract case & submitter ids from fileinfo for file {}. Using NaN'.format(file_id))
             pass
     return data
@@ -518,7 +521,6 @@ def get_clinical_data(project_name=None, xml_files=None, **kwargs):
     if xml_files is None:
         xml_files = download_clinical_files(project_name=project_name, **kwargs)
     data = list()
-    xml_files = [f for f in xml_files if f != '']
     for xml_file in xml_files:
         data.append(get_clinical_data_from_file(xml_file, fileinfo=xml_files.fileinfo))
     df = pd.DataFrame(data)
