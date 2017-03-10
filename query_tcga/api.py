@@ -46,7 +46,6 @@ def get_data(endpoint_name, arg=None,
                                              verify=verify,
                                              **extra_params
                                              )
-
     # requests URL-encodes automatically
     log.info('submitting request for {endpoint} with params {params}'.format(endpoint=endpoint, params=params))
     response = requests_get(endpoint, params=params)
@@ -89,6 +88,10 @@ def get_fileinfo_data(file_id,
                       chunk_size=get_setting_value('DEFAULT_CHUNK_SIZE')
                       ):
     file_id = helpers.convert_to_list(file_id)
+    file_id = [x for x in file_id if x != '']
+    if len(file_id) == 0:
+        # logger.warning('No files left to process')
+        return pd.DataFrame()
     if len(file_id)>chunk_size:
         chunks = [file_id[x:x+chunk_size] for x in range(0, len(file_id), chunk_size)]
         data = [get_fileinfo_data(chunk, fields=fields) for chunk in chunks]
@@ -110,25 +113,58 @@ def get_fileinfo_data(file_id,
     df = pd.DataFrame(df)
     return df
 
-
 @log_with()
 def _describe_samples(case_ids,
-                      data_category,
                       query_args={},
+
                       **kwargs):
     """ Helper function to describe sample files
     """
+    sample_df = list()
     for case_id in helpers.convert_to_list(case_ids):
-        sample_df = list()
-        samples = get_data(endpoint='cases',
-                               fields='sample_ids',
+        samples = get_data(endpoint_name='cases',
+                               fields=['files.cases.samples.sample_id',
+                                       'files.cases.samples.sample_type',
+                                       'files.cases.samples.sample_type_id',
+                                       'files.cases.samples.composition'
+                                       'files.cases.samples.created_datetime',
+'files.cases.samples.current_weight',
+'files.cases.samples.days_to_collection',
+'files.cases.samples.days_to_sample_procurement',
+'files.cases.samples.freezing_method',
+'files.cases.samples.initial_weight',
+'files.cases.samples.intermediate_dimension',
+'files.cases.samples.is_ffpe',
+'files.cases.samples.longest_dimension',
+'files.cases.samples.oct_embedded',
+'files.cases.samples.pathology_report_uuid',
+'files.cases.samples.preservation_method',
+'files.cases.samples.sample_id',
+'files.cases.samples.sample_type',
+'files.cases.samples.sample_type_id',
+'files.cases.samples.shortest_dimension',
+'files.cases.samples.state',
+'files.cases.samples.submitter_id',
+'files.cases.samples.time_between_clamping_and_freezing',
+'files.cases.samples.time_between_excision_and_freezing',
+'files.cases.samples.tissue_type',
+'files.cases.samples.tumor_code',
+'files.cases.samples.tumor_code_id',
+'files.cases.samples.tumor_descriptor',
+'files.cases.samples.updated_datetime'],
                                query_args=dict(case_id=case_id, **query_args),
                                **kwargs
                                )
-        sample_ids = list()
-        [sample_ids.extend(hit['sample_ids']) for hit in samples.json()['data']['hits']]
-        sample_data = get_data(endpoint='samples',
-                                   query_args=dict(sample_id=sample_ids),
-                                   )
+        sample_data = _convert_sample_result_to_df(samples.json()['data']['hits'])
         sample_df.append(sample_data)
-    return sample_df
+    return pd.concat(sample_df).drop_duplicates()
+
+def _convert_sample_result_to_df(res):
+    sample_df_list = list()
+    for hit in res:
+        for result_file in hit['files']:
+            for result_case in result_file['cases']:
+                hit_data = pd.DataFrame(result_case['samples'])
+                sample_df_list.append(hit_data)
+    return pd.concat(sample_df_list)
+            
