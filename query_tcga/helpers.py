@@ -30,7 +30,7 @@ def convert_to_list(x):
         return(None)
     elif isinstance(x, list):
         return(x)
-    elif isinstance(x, str):
+    elif isinstance(x, str) or isinstance(x, unicode):
         return([x])
     else:
         return(list(x))

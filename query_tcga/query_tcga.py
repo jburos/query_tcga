@@ -29,7 +29,7 @@ cache.setup_cache()
 
 
 @log_with()
-def _get_num_pages(project_name, endpoint_name, size=get_setting_value('DEFAULT_SIZE'),
+def _get_num_pages(project_name, endpoint_name, size=None,
                  n=None, data_category=None, query_args={}, verify=False):
     """ Get total number of pages for given criteria
 
@@ -37,6 +37,8 @@ def _get_num_pages(project_name, endpoint_name, size=get_setting_value('DEFAULT_
     83
 
     """
+    if not size:
+        size = get_setting_value('DEFAULT_SIZE')
     if n and size >= n:
         return 1
     elif n and size:
@@ -57,13 +59,15 @@ def _get_num_pages(project_name, endpoint_name, size=get_setting_value('DEFAULT_
 
 
 @log_with()
-def _get_manifest_once(project_name, size=get_setting_value('DEFAULT_SIZE'), page=0,
+def _get_manifest_once(project_name, size=None, page=0,
                        data_category=None, query_args={}, verify=False):
     """ Single get for manifest of files matching project_name & categories
 
     >>> _get_manifest_once('TCGA-BLCA', query_args=dict(data_category=['Clinical']), size=5)
     <Response [200]>
     """
+    if not size:
+        size = get_setting_value('DEFAULT_SIZE')
     endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint='files')
     from_param = helpers.compute_start_given_page(page=page, size=size)
     params = _params.construct_parameters(project_name=project_name,
@@ -82,7 +86,7 @@ def _get_manifest_once(project_name, size=get_setting_value('DEFAULT_SIZE'), pag
 
 @log_with()
 def get_manifest(project_name=None, n=None, data_category=None, query_args={}, verify=False,
-                 size=get_setting_value('DEFAULT_SIZE'), pages=None):
+                 size=None, pages=None):
     """ Get manifest containing files to be downloaded. 
 
         By default returns a manifest for all files, up to n files. Otherwise users 
@@ -91,6 +95,8 @@ def get_manifest(project_name=None, n=None, data_category=None, query_args={}, v
     >>> get_manifest(project_name='TCGA-BLCA', query_args=dict(data_category=['Clinical']), pages=2, size=2)
     'id\tfilename\tmd5\tsize\tstate\n...'
     """
+    if not size:
+        size = get_setting_value('DEFAULT_SIZE')
     output = io.StringIO()
     ## manifest doesn't have 'pagination' json, so iterate through result manually
     ## determine number of pages
@@ -136,11 +142,13 @@ def get_manifest_data(*args, **kwargs):
 
 
 @log_with()
-def download_manifest(data_dir=get_setting_value('GDC_DATA_DIR'), filename='manifest.txt', only_updates=False, *args, **kwargs):
+def download_manifest(data_dir=None, filename='manifest.txt', only_updates=False, *args, **kwargs):
     """ Get manifest containing files to be downloaded, and write to disk.
         File will be written to GDC_DATA_DIR by default.
         See `get_manifest` for more details.
     """
+    if not data_dir:
+        data_dir = get_setting_value('GDC_DATA_DIR')
     manifest = get_manifest(*args, **kwargs)
     manifest_file = open(os.path.join(data_dir, filename), 'rw')
     return _write_manifest_to_disk(manifest_contents=manifest,
@@ -197,11 +205,15 @@ def _truncate_manifest_contents(manifest_contents, n):
 @log_with()
 def download_from_manifest(manifest_file=None, manifest_contents=None,
                             n=None,
-                            data_dir=get_setting_value('GDC_DATA_DIR'),
+                            data_dir=None,
                             only_updates=True,
-                            size=get_setting_value('DEFAULT_SIZE'),
+                            size=None,
                             pages=None):
 
+    if not data_dir:
+         data_dir = get_setting_value('GDC_DATA_DIR')
+    if not size:
+         size = get_setting_value('DEFAULT_SIZE')
     ## prep manifest contents per params
     if manifest_file:
         manifest_contents = _read_manifest(manifest_file)
@@ -240,9 +252,9 @@ def download_from_manifest(manifest_file=None, manifest_contents=None,
 
 @log_with()
 def download_files(project_name, data_category, n=None, 
-                   data_dir=get_setting_value('GDC_DATA_DIR'), query_args={},
+                   data_dir=None, query_args={},
                    only_updates=True, verify=False,
-                   size=get_setting_value('DEFAULT_SIZE'),
+                   size=None,
                    pages=None):
     """ Download files for this project to the current working directory
         1. Query API to get manifest file containing all files matching criteria
@@ -259,6 +271,10 @@ def download_files(project_name, data_category, n=None,
     100% [#################] Time: 0:00:00 394.49 kB/s
 
     """
+    if not data_dir:
+         data_dir = get_setting_value('GDC_DATA_DIR')
+    if not size:
+         size = get_setting_value('DEFAULT_SIZE')
     # get all manifest data
     manifest_contents = get_manifest(project_name=project_name,
                                     data_category=data_category,
@@ -301,7 +317,7 @@ def download_files(project_name, data_category, n=None,
 
 
 @log_with()
-def download_clinical_files(project_name, n=None, data_dir=get_setting_value('GDC_DATA_DIR'), **kwargs):
+def download_clinical_files(project_name, n=None, data_dir=None, **kwargs):
     """ Download clinical files for this project to the data_dir
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
@@ -311,7 +327,7 @@ def download_clinical_files(project_name, n=None, data_dir=get_setting_value('GD
     -----------
       project_name (string, required): Name of project, ie 'TCGA-BLCA', 'TCGA-BRCA', etc
       n (int, optional): number of files to download (default: None - downloads all)
-      data_dir (string, optional): directory in which to save downloaded files. defaults to 'data/gdc'
+      data_dir (string, optional): directory in which to save downloaded files. defaults to config 'GDC_DATA_DIR'
       query_args (dict, optional): fields to use when filtering result (other than project & data_category)
 
     Other parameters (mostly useful for testing)
@@ -321,6 +337,8 @@ def download_clinical_files(project_name, n=None, data_dir=get_setting_value('GD
       pages (int, optional): how many pages of records to download (default: all, by specifying value of None)
 
     """
+    if not data_dir:
+        data_dir = get_setting_value('GDC_DATA_DIR')
     ## update kwargs with parameters listed explicitly above (for readability)
     return download_files(project_name=project_name, data_category=['Clinical'], n=n, data_dir=data_dir, **kwargs)
 
@@ -468,7 +486,8 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
     #data['submitter_id'] = soup.findChild('submitter_id').text
     data['_source_file_uuid'] = file_id
     ## get file meta-data (for case_id & submitter_id):
-    if fileinfo is None:
+    if fileinfo is None or len(fileinfo.index) == 0:
+        logger.debug('fileinfo is none - getting from file_id')
         fileinfo = api.get_fileinfo_data(file_id=file_id)
     try:
         data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
@@ -480,10 +499,11 @@ def get_clinical_data_from_file(xml_file, fileinfo=None, **kwargs):
             data['case_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'case_id'].values[0]
             data['submitter_id'] = fileinfo.loc[fileinfo['file_id']==file_id[0], 'submitter_id'].values[0]
         except:
+            import pdb
+            pdb.set_trace()
             logging.warning('Unable to extract case & submitter ids from fileinfo for file {}. Using NaN'.format(file_id))
             pass
     return data
-
 
 def _convert_to_categorical(series, max_groups=5):
     """ Convert the series to categorical, if number of distinct groups <= `max_groups`
@@ -497,8 +517,9 @@ def _convert_to_categorical(series, max_groups=5):
 
 
 @log_with()
-def get_clinical_data(project_name, **kwargs):
-    xml_files = download_clinical_files(project_name=project_name, **kwargs)
+def get_clinical_data(project_name=None, xml_files=None, **kwargs):
+    if xml_files is None:
+        xml_files = download_clinical_files(project_name=project_name, **kwargs)
     data = list()
     for xml_file in xml_files:
         data.append(get_clinical_data_from_file(xml_file, fileinfo=xml_files.fileinfo))
