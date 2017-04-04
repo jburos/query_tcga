@@ -126,7 +126,7 @@ def _describe_samples(case_ids,
                                fields=['files.cases.samples.sample_id',
                                        'files.cases.samples.sample_type',
                                        'files.cases.samples.sample_type_id',
-                                       'files.cases.samples.composition'
+                                       'files.cases.samples.composition',
                                        'files.cases.samples.created_datetime',
 'files.cases.samples.current_weight',
 'files.cases.samples.days_to_collection',
