@@ -7,9 +7,7 @@ from . import parameters as _params
 from .cache import requests_get
 from . import helpers
 
-logging.basicConfig()
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 #### ---- utilities for interacting with the GDC api ---- 
 
