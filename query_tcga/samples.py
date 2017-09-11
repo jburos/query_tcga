@@ -37,7 +37,8 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, **kwargs):
 
 
 @qt.log_with()
-def download_vcf_files(project_name, data_format='VCF', workflow_type='SomaticSniper', data_type='Raw Simple Somatic Mutation', query_args={}, dry_run=False, **kwargs):
+def download_vcf_files(project_name, data_format='VCF', workflow_type=None, data_type=['Raw Simple Somatic Mutation', 'Annotated Somatic Mutation'],
+                       query_args={}, dry_run=False, **kwargs):
     """ Download VCF files for this project to the DATA_DIR directory
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
@@ -52,8 +53,8 @@ def download_vcf_files(project_name, data_format='VCF', workflow_type='SomaticSn
     Other parameters (mostly useful for testing)
     -----------
       verify (boolean, optional): if True, verify each name-value pair in the query_args dict
-      page_size (int, optional): how many records to list per page (default 50)
-      max_pages (int, optional): how many pages of records to download (default: all, by specifying value of None)
+      size (int, optional): how many records to list per page (default 50)
+      pages (int, optional): how many pages of records to download (default: all, by specifying value of None)
 
     """
     if data_format:
@@ -81,8 +82,13 @@ def download_vcf_files(project_name, data_format='VCF', workflow_type='SomaticSn
 def _summarize_single_vcf_file(filepath):
     """ Summarize meta-data from a single VCF file
     """
-    vcf = varcode.vcf.load_vcf(filepath, max_variants=1)
-    summary = dict(filepath=filepath, reference_name=vcf[0].reference_name, file_id=helpers.convert_to_file_id(filepath)[0])
+    try:
+        vcf = varcode.vcf.load_vcf(filepath, max_variants=1)
+    except ValueError as e:
+        reference_name = None
+    else:
+        reference_name = vcf[0].reference_name
+    summary = dict(filepath=filepath, reference_name=reference_name, file_id=helpers.convert_to_file_id(filepath)[0])
     return summary
 
 
