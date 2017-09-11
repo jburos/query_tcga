@@ -25,6 +25,8 @@ cache.setup_cache()
 ## 3. verify downloaded files
 ## 4. transform files to format needed by Cohorts (not done)
 
+logger = logging.getLogger(__name__)
+
 
 
 
@@ -233,6 +235,7 @@ def download_from_manifest(manifest_file=None, manifest_contents=None,
     ## prepare to write manifest data to file
     ## and execute gdc-client
     manifest_file = tempfile.NamedTemporaryFile()
+    logger.info('Starting download using manifest_file: {}.'.format(manifest_file.name))
     try:
         # write manifest contents to disk
         _write_manifest_to_disk(manifest_contents=manifest_contents,
@@ -240,7 +243,11 @@ def download_from_manifest(manifest_file=None, manifest_contents=None,
         manifest_file.flush()
         # call gdc-client to download contents
         # {gdc_client} download -m {manifest_file} -t {auth_token}
-        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-m', manifest_file.name, '-t', get_setting_value('GDC_TOKEN_PATH')]
+        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-u', '-n', 8,
+                    '--no-annotations', '--no-related-files', '--retry-amount', '5',
+                    '--wait-time', 3, '--log-file', 'gdc_download_log.$$.txt',
+                    '-m', manifest_file.name,
+                    '-t', get_setting_value('GDC_TOKEN_PATH')]
         if subprocess.check_call(exe_bash, cwd=data_dir):
             subprocess.call(exe_bash, cwd=data_dir)
         # verify that all files in original manifest have been downloaded
@@ -255,7 +262,8 @@ def download_files(project_name, data_category, n=None,
                    data_dir=None, query_args={},
                    only_updates=True, verify=False,
                    size=None,
-                   pages=None):
+                   pages=None,
+                   include_fileinfo=True):
     """ Download files for this project to the current working directory
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
@@ -290,13 +298,18 @@ def download_files(project_name, data_category, n=None,
     new_manifest_contents = _filter_manifest_updates(manifest_contents=manifest_contents,
                                                      data_dir=data_dir,
                                                      only_updates=only_updates)
+    logger.info('{} of {} files in manifest will be downloaded again.'.format(
+        len(new_manifest_contents.splitlines())-1,
+        len(manifest_contents.splitlines())-1))
+
     ## exit if no files need to be updated
-    if new_manifest_contents.strip() == '' or len(new_manifest_contents)==0:
+    if new_manifest_contents.strip() == '' or len(new_manifest_contents)==1:
         return _verify_download(manifest_contents=manifest_contents, data_dir=data_dir)
 
     ## prepare to write manifest data to file
     ## and execute gdc-client
     manifest_file = tempfile.NamedTemporaryFile()
+    logger.info('Starting file download')
     try:
         # write manifest contents to disk
         _write_manifest_to_disk(manifest_contents=new_manifest_contents,
@@ -304,15 +317,20 @@ def download_files(project_name, data_category, n=None,
         manifest_file.flush()
         # call gdc-client to download contents
         # {gdc_client} download -m {manifest_file} -t {auth_token}
-        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-m', manifest_file.name, '-t', get_setting_value('GDC_TOKEN_PATH')]
+        exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-u', '-n', 8,
+                    '--no-annotations', '--no-related-files', '--retry-amount', '5',
+                    '--wait-time', 30, '--log-file', 'gdc_download_log.$$.txt',
+                    '-m', manifest_file.name,
+                    '-t', get_setting_value('GDC_TOKEN_PATH')]
         if subprocess.check_call(exe_bash, cwd=data_dir):
             subprocess.call(exe_bash, cwd=data_dir)
         # verify that all files in original manifest have been downloaded
         downloaded = L(_verify_download(manifest_contents=manifest_contents, data_dir=data_dir))
     finally:
         manifest_file.close()
-    fileinfo = api.get_fileinfo_data(file_id=helpers.convert_to_file_id(downloaded))
-    downloaded.fileinfo = fileinfo ## set attribute on returned list
+    if include_fileinfo:
+        fileinfo = api.get_fileinfo_data(file_id=helpers.convert_to_file_id(downloaded))
+        downloaded.fileinfo = fileinfo ## set attribute on returned list
     return downloaded
 
 
