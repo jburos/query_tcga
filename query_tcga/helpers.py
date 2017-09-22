@@ -16,11 +16,11 @@ def convert_to_list(x):
     Examples
     -----------
 
-    >>> _convert_to_list('Clinical')
+    >>> convert_to_list('Clinical')
     ['Clinical']
-    >>> _convert_to_list(['Clinical'])
+    >>> convert_to_list(['Clinical'])
     ['Clinical']
-    >>> _convert_to_list(('Clinical','Biospecimen'))
+    >>> convert_to_list(('Clinical','Biospecimen'))
     ['Clinical', 'Biospecimen']
 
     """
