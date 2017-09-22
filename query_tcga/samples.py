@@ -3,6 +3,7 @@ from . import query_tcga as qt
 import varcode
 import pandas as pd
 from . import helpers, api
+import os
 
 #### ---- download other files ----
 
@@ -33,8 +34,28 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, **kwargs):
     else:
         files = qt.download_files(project_name=project_name, data_category=['Raw Sequencing Data'],
                  query_args=query_args, **kwargs)
+        files = _summarize_wxs_files(files)
     return files
 
+@qt.log_with()
+def _summarize_wxs_files(bam_files):
+    bam_file_summary = bam_files.fileinfo
+    # check if these fileinfo data have already been augmented
+    if 'filepath' in bam_file_summary.columns:
+        return bam_files
+    # get sample info (ie sample_type, etc) for each file
+    bam_sample_info = pd.DataFrame([a[0] for a in bam_file_summary.samples.tolist()])
+    bam_sample_info.reset_index(inplace=True)
+    bam_file_summary.reset_index(inplace=True)
+    bam_file_summary = pd.concat([bam_file_summary, bam_sample_info], axis=1)
+    bam_file_summary.drop(['index', 'index.1'], axis=1, inplace=True)
+    bam_file_summary.rename(columns = {'submitter_id.1': 'sample_submitter_id'}, inplace=True)
+    # create field `filepath` containing path to file downloaded
+    bam_file_paths = pd.DataFrame(data=dict(filepath = bam_files))
+    bam_file_paths['file_name'] = bam_file_paths.filepath.apply(os.path.basename)
+    bam_file_summary = pd.merge(bam_file_summary, bam_file_paths, on='file_name', how='right')
+    bam_files.fileinfo = bam_file_summary
+    return bam_files
 
 @qt.log_with()
 def download_vcf_files(project_name, data_format='VCF', workflow_type=None, data_type=['Raw Simple Somatic Mutation', 'Annotated Somatic Mutation'],
