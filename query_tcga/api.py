@@ -13,13 +13,15 @@ log = logging.getLogger(__name__)
 
 @log_with()
 def get_data(endpoint_name, arg=None,
-              project_name=None, fields=None, size=get_setting_value('DEFAULT_SIZE'), page=0,
-              data_category=None, query_args={}, verify=False, *args, **kwargs):
+              project_name=None, fields=None, size=None,
+              page=0, data_category=None, query_args={}, verify=False, *args, **kwargs):
     """ Get single result from querying GDC api endpoint
 
     >>> file = get_data(endpoint='files', data_category='Clinical', query_args=dict(file_id=df['case_uuid'][0]))
     <Response [200]>
     """
+    if size is None:
+        size = int(get_setting_value('DEFAULT_SIZE'))
     endpoint = get_setting_value('GDC_API_ENDPOINT').format(endpoint=endpoint_name)
     if arg:
         endpoint = endpoint+'/{}'.format(arg)
@@ -38,12 +40,12 @@ def get_data(endpoint_name, arg=None,
             ## correctly
             extra_params.update(dict(**kwargs))
         params = _params.construct_parameters(project_name=project_name,
-                                             size=size,
-                                             data_category=data_category,
-                                             query_args=query_args,
-                                             verify=verify,
-                                             **extra_params
-                                             )
+                                              size=size,
+                                              data_category=data_category,
+                                              query_args=query_args,
+                                              verify=verify,
+                                              **extra_params
+                                              )
     # requests URL-encodes automatically
     log.info('submitting request for {endpoint} with params {params}'.format(endpoint=endpoint, params=params))
     response = requests_get(endpoint, params=params)
@@ -72,9 +74,11 @@ def _get_sample_data():
 
 
 @log_with()
-def get_fileinfo(file_id, fields=get_setting_value('DEFAULT_FILE_FIELDS'), format=None):
+def get_fileinfo(file_id, fields=None, format=None, chunk_size=None):
+    if fields is None:
+        fields = get_setting_value('DEFAULT_FILE_FIELDS')
     query_args = {'files.file_id': file_id}
-    response = get_data(endpoint_name='files', query_args=query_args, fields=fields, format=format)
+    response = get_data(endpoint_name='files', query_args=query_args, fields=fields, format=format, size=chunk_size)
     if format == 'json':
         return response.json()['data']['hits']
     else:
@@ -82,9 +86,13 @@ def get_fileinfo(file_id, fields=get_setting_value('DEFAULT_FILE_FIELDS'), forma
 
 
 def get_fileinfo_data(file_id,
-                      fields=get_setting_value('DEFAULT_FILE_FIELDS'),
-                      chunk_size=get_setting_value('DEFAULT_CHUNK_SIZE')
+                      fields=None,
+                      chunk_size=None
                       ):
+    if fields is None:
+        fields = get_setting_value('DEFAULT_FILE_FIELDS')
+    if chunk_size is None:
+        chunk_size = int(get_setting_value('DEFAULT_CHUNK_SIZE'))
     file_id = helpers.convert_to_list(file_id)
     file_id = [x for x in file_id if x != '']
     if len(file_id) == 0:
@@ -92,9 +100,10 @@ def get_fileinfo_data(file_id,
         return pd.DataFrame()
     if len(file_id)>chunk_size:
         chunks = [file_id[x:x+chunk_size] for x in range(0, len(file_id), chunk_size)]
-        data = [get_fileinfo_data(chunk, fields=fields) for chunk in chunks]
+        data = [get_fileinfo_data(chunk, fields=fields, chunk_size=chunk_size) for chunk in chunks]
         return pd.concat(data)
-    res = get_fileinfo(file_id=file_id, fields=fields, format='json')
+    res = get_fileinfo(file_id=file_id, fields=fields, format='json', chunk_size=chunk_size)
+    assert len(res) == len(file_id), "Not enough results from fileinfo returned"
     df = list()
     for hit in res:
         hit_data = dict()
@@ -108,6 +117,7 @@ def get_fileinfo_data(file_id,
             else:
                 hit_data[k] = v
         df.append(hit_data)
+    assert len(df) == len(file_id), "Some fileinfo details not queried"
     df = pd.DataFrame(df)
     return df
 
