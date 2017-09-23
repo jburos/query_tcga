@@ -8,7 +8,7 @@ import os
 #### ---- download other files ----
 
 @qt.log_with()
-def download_wxs_files(project_name, query_args={}, dry_run=False, **kwargs):
+def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_strategy=["WXS", "RNA-Seq"], **kwargs):
     """ Download sequencing files for this project to the current working directory
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
@@ -18,7 +18,9 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, **kwargs):
     -----------
       project_name (string, required): Name of project, ie 'TCGA-BLCA', 'TCGA-BRCA', etc
       data_dir (string, optional): directory in which to save downloaded files. defaults to 'data/gdc'
-      query_args (dict, optional): other filters to apply (e.g. experimental_strategy=["WXS", "RNA-Seq", "Genotyping Array", "miRNA-Seq"])
+      query_args (dict, optional): other filters to apply (other than experimental_strategy & project)
+      experimental_strategy (list, optional): filter by experimental stragery. 
+        Examples include ["WXS", "RNA-Seq", "Genotyping Array", "miRNA-Seq"]
 
     Other parameters (mostly useful for testing)
     -----------
@@ -27,7 +29,7 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, **kwargs):
       max_pages (int, optional): how many pages of records to download (default: all, by specifying value of None)
 
     """
-    query_args.update(dict(experimental_strategy='WXS'))
+    query_args.update(dict(experimental_strategy=experimental_strategy))
     if dry_run:
         files = qt.get_manifest_data(project_name=project_name, data_category=['Raw Sequencing Data'],
                  query_args=query_args, **kwargs)
