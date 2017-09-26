@@ -29,7 +29,8 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_
       max_pages (int, optional): how many pages of records to download (default: all, by specifying value of None)
 
     """
-    query_args.update(dict(experimental_strategy=experimental_strategy))
+    if experimental_strategy:
+        query_args.update(dict(experimental_strategy=experimental_strategy))
     if dry_run:
         files = qt.get_manifest_data(project_name=project_name, data_category=['Raw Sequencing Data'],
                  query_args=query_args, **kwargs)
