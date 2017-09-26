@@ -318,12 +318,9 @@ def download_files(project_name, data_category, n=None,
             manifest_file.flush()
             # call gdc-client to download contents
             # {gdc_client} download -m {manifest_file} -t {auth_token}
-            exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download', '-n', '8',
-                        '--no-annotations', '--no-related-files', '--retry-amount', '5',
-                        '--wait-time', '30', '--log-file', 'gdc_download_log.$$.txt',
+            exe_bash = [get_setting_value('GDC_CLIENT_PATH'), 'download',
                         '-m', manifest_file.name,
-                        '-t', get_setting_value('GDC_TOKEN_PATH'),
-                        '--debug'
+                        '-t', get_setting_value('GDC_TOKEN_PATH')
                         ]
             retcode = subprocess.run(exe_bash, cwd=data_dir)
             # verify that all files in original manifest have been downloaded
