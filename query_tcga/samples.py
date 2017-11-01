@@ -8,7 +8,7 @@ import os
 #### ---- download other files ----
 
 @qt.log_with()
-def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_strategy=["WXS", "RNA-Seq"], **kwargs):
+def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_strategy=["WXS", "RNA-Seq"], data_category=['Raw Sequencing Data'], **kwargs):
     """ Download sequencing files for this project to the current working directory
         1. Query API to get manifest file containing all files matching criteria
         2. Use gdc-client to download files to current working directory
@@ -32,10 +32,10 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_
     if experimental_strategy:
         query_args.update(dict(experimental_strategy=experimental_strategy))
     if dry_run:
-        files = qt.get_manifest_data(project_name=project_name, data_category=['Raw Sequencing Data'],
+        files = qt.get_manifest_data(project_name=project_name, data_category=data_category,
                  query_args=query_args, **kwargs)
     else:
-        files = qt.download_files(project_name=project_name, data_category=['Raw Sequencing Data'],
+        files = qt.download_files(project_name=project_name, data_category=data_category,
                  query_args=query_args, **kwargs)
         files = _summarize_wxs_files(files)
     return files
