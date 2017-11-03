@@ -32,12 +32,14 @@ def download_wxs_files(project_name, query_args={}, dry_run=False, experimental_
     if experimental_strategy:
         query_args.update(dict(experimental_strategy=experimental_strategy))
     if dry_run:
-        files = qt.get_manifest_data(project_name=project_name, data_category=data_category,
-                 query_args=query_args, **kwargs)
+        manifest = qt.get_manifest_data(project_name=project_name, data_category=data_category,
+                   query_args=query_args, **kwargs)
+        files = fileinfo.filename
+        files.fileinfo = api.get_fileinfo_data(file_id=files.id)
     else:
         files = qt.download_files(project_name=project_name, data_category=data_category,
                  query_args=query_args, **kwargs)
-        files = _summarize_wxs_files(files)
+    files = _summarize_wxs_files(files)
     return files
 
 @qt.log_with()
